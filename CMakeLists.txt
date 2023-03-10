@@ -3,4 +3,4 @@ project(testovoe)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(testovoe main.cpp)
+add_executable(testovoe main.cpp model.h)
