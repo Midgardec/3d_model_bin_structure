@@ -1,11 +1,8 @@
-//
-// Created by valie on 10.03.2023.
-//
-
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <string>
+#include <stdexcept>
 
 using namespace std;
 
@@ -18,8 +15,12 @@ public:
     string textureName; // название текстуры
 
     void writeToFile(const char *filename) {
-        ofstream file(filename, ios::binary);
-        if (file.is_open()) {
+        try {
+            ofstream file(filename, ios::binary);
+            if (!file.is_open()) {
+                throw runtime_error("Error: cannot open file for writing.");
+            }
+
             int vertexCount = positions.size() / 3;
             file.write((char *) &vertexCount, sizeof(int));
             file.write((char *) positions.data(), sizeof(float) * positions.size());
@@ -32,14 +33,19 @@ public:
             file.write((char *) &textureNameLength, sizeof(int));
             file.write(textureName.c_str(), textureNameLength);
             file.close();
-        } else {
-            cout << "Error: cannot open file " << filename << " for writing." << endl;
+        }
+        catch (const exception& e) {
+            cerr << e.what() << endl;
         }
     }
 
     void readFromFile(const char *filename) {
-        ifstream file(filename, ios::binary);
-        if (file.is_open()) {
+        try {
+            ifstream file(filename, ios::binary);
+            if (!file.is_open()) {
+                throw runtime_error("Error: cannot open file for reading.");
+            }
+
             int vertexCount;
             file.read((char *) &vertexCount, sizeof(int));
             positions.resize(vertexCount * 3);
@@ -59,9 +65,9 @@ public:
             textureName = texture;
             delete[] texture;
             file.close();
-        } else {
-            cout << "Error: cannot open file " << filename << " for reading." << endl;
+        }
+        catch (const exception& e) {
+            cerr << e.what() << endl;
         }
     }
 };
-
