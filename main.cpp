@@ -1,5 +1,6 @@
 #include <iostream>
 #include "model.h"
+
 int main() {
     Model model;
     // инициализация модели
@@ -15,11 +16,11 @@ int main() {
     // читаем модель из файла
     Model loadedModel;
     loadedModel.readFromFile("model.bin");
-
     // выводим информацию о модели
-    cout << "Loaded model: " << endl;
-    cout << "Vertex count: " << loadedModel.positions.size() / 3 << endl;
-    cout << "Texture name: " << loadedModel.textureName << endl;
+    std::cout << "Loaded model: " << std::endl;
+    std::cout << "Vertex count: " << loadedModel.positions.size() / 3 << std::endl;
+    std::cout << "Texture name: " << loadedModel.textureName << std::endl;
+
 
     return 0;
 }

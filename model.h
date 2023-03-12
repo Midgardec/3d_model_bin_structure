@@ -4,70 +4,129 @@
 #include <string>
 #include <stdexcept>
 
-using namespace std;
+// Класс Model определяет модель 3D объекта, хранящую информацию о вершинах, индексах, нормалях, UV-координатах и текстуре.
+// Имеет методы для записи и чтения модели из файла в двоичном формате.
+
 
 class Model {
 public:
-    vector<float> positions; // позиции вертексов
-    vector<float> normals; // нормали вертексов
-    vector<float> uvs; // UV-координаты вертексов
-    vector<int> indices; // индексы вертексов
-    string textureName; // название текстуры
+    std::vector<float> positions;   // позиции вертексов
+    std::vector<float> normals;     // нормали вертексов
+    std::vector<float> uvs;         // UV-координаты вертексов
+    std::vector<int> indices;       // индексы вертексов
+    std::string textureName;        // название текстуры
 
-    void writeToFile(const char *filename) {
+
+    // Записывает модель в двоичный файл с заданным именем файла
+    void writeToFile(const std::string& filename) {
         try {
-            ofstream file(filename, ios::binary);
-            if (!file.is_open()) {
-                throw runtime_error("Error: cannot open file for writing.");
+            std::ofstream file(filename, std::ios::binary);
+            if (!file) {
+                throw std::runtime_error("Error: cannot open file for writing.");
             }
 
-            int vertexCount = positions.size() / 3;
-            file.write((char *) &vertexCount, sizeof(int));
-            file.write((char *) positions.data(), sizeof(float) * positions.size());
-            file.write((char *) normals.data(), sizeof(float) * normals.size());
-            file.write((char *) uvs.data(), sizeof(float) * uvs.size());
-            int indexCount = indices.size();
-            file.write((char *) &indexCount, sizeof(int));
-            file.write((char *) indices.data(), sizeof(int) * indices.size());
-            int textureNameLength = textureName.size() + 1;
-            file.write((char *) &textureNameLength, sizeof(int));
-            file.write(textureName.c_str(), textureNameLength);
-            file.close();
+
+            // Проверяем размеры массивов данных
+            if (positions.size() % 3 != 0 || normals.size() % 3 != 0 || uvs.size() % 2 != 0) {
+                throw std::runtime_error("Error: invalid array size for vertex data.");
+            }
+
+            // Проверяем совместимость индексов
+            for (int index : indices) {
+                if (index < 0 || index >= positions.size() / 3) {
+                    throw std::runtime_error("Error: invalid vertex index in index buffer.");
+                }
+            }
+
+
+            int vertexCount = static_cast<int>(positions.size() / 3);                // вычисление количества вершин модели
+
+            file.write(reinterpret_cast<char*>(&vertexCount), sizeof(int));    // запись количества вершин в файл
+            file.write(reinterpret_cast<char*>(positions.data()), sizeof(float) * positions.size());    // запись позиций вершин в файл
+            file.write(reinterpret_cast<char*>(normals.data()), sizeof(float) * normals.size());        // запись нормалей вершин в файл
+
+            file.write(reinterpret_cast<char*>(uvs.data()), sizeof(float) * uvs.size());                // запись UV-координат вершин в файл
+
+            int indexCount = static_cast<int>(indices.size());                      // вычисление количества индексов модели
+            file.write(reinterpret_cast<char*>(&indexCount), sizeof(int));    // запись количества индексов в файл
+            file.write(reinterpret_cast<char*>(indices.data()), sizeof(int) * indices.size());          // запись индексов вершин в файл
+
+            int textureNameLength = static_cast<int>(textureName.size() + 1);       // вычисление длины названия текстуры
+            file.write(reinterpret_cast<char*>(&textureNameLength), sizeof(int));                       // запись длины названия текстуры в файл
+            file.write(textureName.c_str(), textureNameLength);                // запись названия текстуры в файл
+
+            file.close();                                                          // закрытие потока
         }
-        catch (const exception& e) {
-            cerr << e.what() << endl;
+        catch (const std::exception& e) {
+            std::cerr << e.what() << std::endl;
         }
     }
 
-    void readFromFile(const char *filename) {
+
+    // Читает модель из двоичного файла с заданным именем файла
+    void readFromFile(const std::string& filename) {
         try {
-            ifstream file(filename, ios::binary);
-            if (!file.is_open()) {
-                throw runtime_error("Error: cannot open file for reading.");
+            std::ifstream file(filename, std::ios::binary);
+            if (!file) {
+                throw std::runtime_error("Error: cannot open file for reading.");
             }
 
             int vertexCount;
-            file.read((char *) &vertexCount, sizeof(int));
+            file.read(reinterpret_cast<char*>(&vertexCount), sizeof(vertexCount));
+            if (file.gcount() != sizeof(vertexCount)) {
+                throw std::runtime_error("Error: failed to read vertex count from file.");
+            }
+
             positions.resize(vertexCount * 3);
-            file.read((char *) positions.data(), sizeof(float) * positions.size());
+            file.read(reinterpret_cast<char*>(positions.data()), sizeof(float) * positions.size());
+            if (file.gcount() != sizeof(float) * positions.size()) {
+                throw std::runtime_error("Error: failed to read vertex positions from file.");
+            }
+
             normals.resize(vertexCount * 3);
-            file.read((char *) normals.data(), sizeof(float) * normals.size());
+            file.read(reinterpret_cast<char*>(normals.data()), sizeof(float) * normals.size());
+            if (file.gcount() != sizeof(float) * normals.size()) {
+                throw std::runtime_error("Error: failed to read vertex normals from file.");
+            }
+
             uvs.resize(vertexCount * 2);
-            file.read((char *) uvs.data(), sizeof(float) * uvs.size());
+            file.read(reinterpret_cast<char*>(uvs.data()), sizeof(float) * uvs.size());
+            if (file.gcount() != sizeof(float) * uvs.size()) {
+                throw std::runtime_error("Error: failed to read vertex UVs from file.");
+            }
+
             int indexCount;
-            file.read((char *) &indexCount, sizeof(int));
+            file.read(reinterpret_cast<char*>(&indexCount), sizeof(indexCount));
+            if (file.gcount() != sizeof(indexCount)) {
+                throw std::runtime_error("Error: failed to read index count from file.");
+            }
+
             indices.resize(indexCount);
-            file.read((char *) indices.data(), sizeof(int) * indices.size());
+            file.read(reinterpret_cast<char*>(indices.data()), sizeof(int) * indices.size());
+            if (file.gcount() != sizeof(int) * indices.size()) {
+                throw std::runtime_error("Error: failed to read indices from file.");
+            }
+
             int textureNameLength;
-            file.read((char *) &textureNameLength, sizeof(int));
-            char *texture = new char[textureNameLength];
-            file.read(texture, textureNameLength);
-            textureName = texture;
-            delete[] texture;
+            file.read(reinterpret_cast<char*>(&textureNameLength), sizeof(textureNameLength));
+            if (file.gcount() != sizeof(textureNameLength)) {
+                throw std::runtime_error("Error: failed to read texture name length from file.");
+            }
+
+            char* textureNameBuffer = new char[textureNameLength];
+            file.read(textureNameBuffer, textureNameLength);
+            if (file.gcount() != textureNameLength) {
+                delete[] textureNameBuffer;
+                throw std::runtime_error("Error: failed to read texture name from file.");
+            }
+
+            textureName = std::string(textureNameBuffer);
+            delete[] textureNameBuffer;
+
             file.close();
         }
-        catch (const exception& e) {
-            cerr << e.what() << endl;
+        catch (const std::exception& e) {
+            std::cerr << e.what() << std::endl;
         }
     }
 };
